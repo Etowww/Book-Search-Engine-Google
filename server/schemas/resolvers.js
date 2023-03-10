@@ -1,6 +1,8 @@
 const { AuthenticationError } = require('apollo-server-express');
-const { User, Book } = require('../models');
+const { User} = require('../models');
 const { findOneAndUpdate } = require('../models/User');
+
+const { signToken } = require('../utils/auth')
 
 const resolvers = {
     Query: {
@@ -24,7 +26,7 @@ const resolvers = {
                 throw new AuthenticationError('Incorrect credentials');
             }
 
-            const correctPw = await User.isCorrectPassword(password);
+            const correctPw = await user.isCorrectPassword(password);
 
             if (!correctPw) {
                 throw new AuthenticationError('Incorrect credentials');
@@ -40,13 +42,13 @@ const resolvers = {
 
             return { token, user };
         },
-        saveBook: async (parent, { authors, description, title, bookId, image, link }, context) => {
+        saveBook: async (parent, { bookData }, context) => {
             if (context.user) {
-                const updatedUser = await findOneAndUpdate(
-                    { _id: context.user.id },
+                const updatedUser = await User.findOneAndUpdate(
+                    { _id: context.user._id },
                     { 
                         $addToSet: {
-                            savedBooks: { authors, description, title, bookId, image, link},
+                            savedBooks: bookData,
                         },
                     },
                     { new: true, runValidators: true }
@@ -61,7 +63,7 @@ const resolvers = {
         removeBook: async(parent, { bookId }, context) => {
             if (context.user) {
                 const updatedUser = await User.findByIdAndUpdate(
-                    { _id: context.user.id },
+                    { _id: context.user._id },
                     { $pull: { savedBooks: { bookId } } },
                     { new: true }
                 );
