@@ -37,6 +37,9 @@ const SavedBooks = () => {
       console.error(err);
     }
   };
+  if (loading) {
+    return null;
+  }
 
   return (
     <>
